@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Noctusoft API Status</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0d1117; color: #e6edf3; min-height: 100vh; }
+        .container { max-width: 800px; margin: 0 auto; padding: 2rem 1.5rem; }
+        h1 { font-size: 1.6rem; margin-bottom: 0.3rem; }
+        .subtitle { color: #8b949e; font-size: 0.9rem; margin-bottom: 2rem; }
+        .overall { padding: 1.5rem; border-radius: 12px; margin-bottom: 2rem; text-align: center; font-size: 1.2rem; font-weight: 600; }
+        .overall.checking { background: #1c1f26; color: #8b949e; }
+        .overall.up { background: #0d2818; color: #3fb950; border: 1px solid #238636; }
+        .overall.degraded { background: #2d1b00; color: #d29922; border: 1px solid #9e6a03; }
+        .overall.down { background: #2d0000; color: #f85149; border: 1px solid #da3633; }
+        .section { margin-bottom: 1.5rem; }
+        .section-title { font-size: 0.8rem; color: #8b949e; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; padding-bottom: 0.3rem; border-bottom: 1px solid #21262d; }
+        .service { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; background: #161b22; border: 1px solid #21262d; border-radius: 8px; margin-bottom: 0.5rem; }
+        .service-left { display: flex; align-items: center; gap: 0.75rem; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+        .dot.up { background: #3fb950; box-shadow: 0 0 6px #3fb95066; }
+        .dot.down { background: #f85149; box-shadow: 0 0 6px #f8514966; }
+        .dot.checking { background: #8b949e; animation: pulse 1.5s infinite; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
+        .service-name { font-size: 0.95rem; font-weight: 500; }
+        .service-url { font-size: 0.75rem; color: #8b949e; font-family: monospace; }
+        .service-right { text-align: right; }
+        .service-status { font-size: 0.85rem; font-weight: 500; }
+        .service-status.up { color: #3fb950; }
+        .service-status.down { color: #f85149; }
+        .service-status.checking { color: #8b949e; }
+        .service-latency { font-size: 0.75rem; color: #8b949e; }
+        .footer { margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #21262d; display: flex; justify-content: space-between; align-items: center; font-size: 0.8rem; color: #8b949e; }
+        .refresh-btn { background: #21262d; border: 1px solid #30363d; color: #e6edf3; padding: 0.4rem 1rem; border-radius: 6px; cursor: pointer; font-size: 0.8rem; }
+        .refresh-btn:hover { background: #30363d; }
+        .last-check { font-size: 0.75rem; color: #8b949e; margin-top: 0.5rem; text-align: center; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Noctusoft API Status</h1>
+    <p class="subtitle">Real-time health checks from your browser</p>
+
+    <div id="overall" class="overall checking">Checking services...</div>
+
+    <div id="services"></div>
+
+    <div class="last-check" id="lastCheck"></div>
+
+    <div class="footer">
+        <span>Noctusoft, Inc.</span>
+        <button class="refresh-btn" onclick="runChecks()">Refresh</button>
+    </div>
+</div>
+
+<script>
+const services = [
+    {
+        section: "Relay Services",
+        items: [
+            { name: "SendGrid Email Relay", url: "https://api.sendgrid.noctusoft.com/health", domain: "api.sendgrid.noctusoft.com" },
+            { name: "Twilio SMS Relay", url: "https://api.twilio.noctusoft.com/health", domain: "api.twilio.noctusoft.com" },
+            { name: "Square Payments Relay", url: "https://connect.squareup.noctusoft.com/health", domain: "connect.squareup.noctusoft.com" },
+            { name: "Google APIs Relay", url: "https://googleapis.noctusoft.com/health", domain: "googleapis.noctusoft.com" },
+        ]
+    },
+    {
+        section: "Core Infrastructure",
+        items: [
+            { name: "Noctusoft Unified API", url: "https://noctusoft.com/twilio/api/health", domain: "noctusoft.com/twilio/api" },
+            { name: "SGXXX Relay", url: "https://sgxxx.noctusoft.com/health", domain: "sgxxx.noctusoft.com" },
+        ]
+    },
+    {
+        section: "Upstream Services",
+        items: [
+            { name: "SendGrid (Direct)", url: "https://status.sendgrid.com/api/v2/status.json", domain: "api.sendgrid.com", parseStatus: (d) => d.status?.indicator === "none" || d.status?.indicator === "minor" },
+            { name: "Twilio (Direct)", url: "https://status.twilio.com/api/v2/status.json", domain: "api.twilio.com", parseStatus: (d) => d.status?.indicator === "none" || d.status?.indicator === "minor" },
+            { name: "Square (Direct)", url: "https://issquareup.com/api/v2/status.json", domain: "connect.squareup.com", parseStatus: (d) => d.status?.indicator === "none" || d.status?.indicator === "minor" },
+        ]
+    }
+];
+
+function renderServices() {
+    const container = document.getElementById("services");
+    container.innerHTML = "";
+    services.forEach(section => {
+        const div = document.createElement("div");
+        div.className = "section";
+        div.innerHTML = `<div class="section-title">${section.section}</div>`;
+        section.items.forEach(svc => {
+            const id = svc.domain.replace(/[^a-z0-9]/gi, "-");
+            div.innerHTML += `
+                <div class="service" id="svc-${id}">
+                    <div class="service-left">
+                        <div class="dot checking" id="dot-${id}"></div>
+                        <div>
+                            <div class="service-name">${svc.name}</div>
+                            <div class="service-url">${svc.domain}</div>
+                        </div>
+                    </div>
+                    <div class="service-right">
+                        <div class="service-status checking" id="status-${id}">Checking</div>
+                        <div class="service-latency" id="latency-${id}"></div>
+                    </div>
+                </div>`;
+        });
+        container.appendChild(div);
+    });
+}
+
+async function checkService(svc) {
+    const id = svc.domain.replace(/[^a-z0-9]/gi, "-");
+    const dot = document.getElementById(`dot-${id}`);
+    const status = document.getElementById(`status-${id}`);
+    const latency = document.getElementById(`latency-${id}`);
+
+    try {
+        const start = performance.now();
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 10000);
+
+        const res = await fetch(svc.url, {
+            signal: controller.signal,
+            mode: "cors",
+            cache: "no-store",
+        });
+        clearTimeout(timeout);
+        const ms = Math.round(performance.now() - start);
+
+        let isUp = res.ok;
+        if (svc.parseStatus && res.ok) {
+            try {
+                const data = await res.json();
+                isUp = svc.parseStatus(data);
+            } catch (e) {
+                isUp = res.ok;
+            }
+        }
+
+        dot.className = `dot ${isUp ? "up" : "down"}`;
+        status.className = `service-status ${isUp ? "up" : "down"}`;
+        status.textContent = isUp ? "Operational" : "Degraded";
+        latency.textContent = `${ms}ms`;
+        return isUp;
+    } catch (e) {
+        dot.className = "dot down";
+        status.className = "service-status down";
+        status.textContent = "Down";
+        latency.textContent = e.name === "AbortError" ? "Timeout" : "Unreachable";
+        return false;
+    }
+}
+
+async function runChecks() {
+    const overall = document.getElementById("overall");
+    overall.className = "overall checking";
+    overall.textContent = "Checking services...";
+
+    renderServices();
+
+    const allItems = services.flatMap(s => s.items);
+    const results = await Promise.all(allItems.map(checkService));
+
+    const up = results.filter(Boolean).length;
+    const total = results.length;
+
+    if (up === total) {
+        overall.className = "overall up";
+        overall.textContent = "All Systems Operational";
+    } else if (up === 0) {
+        overall.className = "overall down";
+        overall.textContent = "Major Outage";
+    } else {
+        overall.className = "overall degraded";
+        overall.textContent = `Partial Outage (${up}/${total} operational)`;
+    }
+
+    document.getElementById("lastCheck").textContent = `Last checked: ${new Date().toLocaleString()}`;
+}
+
+// Auto-refresh every 60 seconds
+runChecks();
+setInterval(runChecks, 60000);
+</script>
+</body>
+</html>
