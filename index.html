@@ -58,8 +58,9 @@
 <script>
 const services = [
     {
-        section: "Relay Services",
+        section: "API Relay Services",
         items: [
+            { name: "Noctusoft Unified API", url: "https://noctusoft.com/twilio/api/health", domain: "noctusoft.com/twilio/api" },
             { name: "SendGrid Email Relay", url: "https://api.sendgrid.noctusoft.com/health", domain: "api.sendgrid.noctusoft.com" },
             { name: "Twilio SMS Relay", url: "https://api.twilio.noctusoft.com/health", domain: "api.twilio.noctusoft.com" },
             { name: "Square Payments Relay", url: "https://connect.squareup.noctusoft.com/health", domain: "connect.squareup.noctusoft.com" },
@@ -67,18 +68,34 @@ const services = [
         ]
     },
     {
-        section: "Core Infrastructure",
+        section: "Railway Apps",
         items: [
-            { name: "Noctusoft Unified API", url: "https://noctusoft.com/twilio/api/health", domain: "noctusoft.com/twilio/api" },
-            { name: "SGXXX Relay", url: "https://sgxxx.noctusoft.com/health", domain: "sgxxx.noctusoft.com" },
+            { name: "Ember Lead", url: "https://emberlead.pro", domain: "emberlead.pro" },
+            { name: "Ember Lead API", url: "https://api.emberlead.pro", domain: "api.emberlead.pro" },
+            { name: "Scholarmancy", url: "https://scholarmancy.com", domain: "scholarmancy.com" },
+            { name: "Scholarmancy API", url: "https://api.scholarmancy.com", domain: "api.scholarmancy.com" },
+            { name: "FieldView.Live", url: "https://fieldview.live", domain: "fieldview.live" },
+            { name: "FieldView.Live API", url: "https://api.fieldview.live", domain: "api.fieldview.live" },
+            { name: "Escalating Reminders API", url: "https://escalatingreminders.com", domain: "escalatingreminders.com" },
+            { name: "Mailpit", url: "https://mailpit.noctusoft.com", domain: "mailpit.noctusoft.com" },
         ]
     },
     {
-        section: "Upstream Services",
+        section: "Vercel Apps",
         items: [
-            { name: "SendGrid (Direct)", url: "https://status.sendgrid.com/api/v2/status.json", domain: "api.sendgrid.com", parseStatus: (d) => d.status?.indicator === "none" || d.status?.indicator === "minor" },
-            { name: "Twilio (Direct)", url: "https://status.twilio.com/api/v2/status.json", domain: "api.twilio.com", parseStatus: (d) => d.status?.indicator === "none" || d.status?.indicator === "minor" },
-            { name: "Square (Direct)", url: "https://issquareup.com/api/v2/status.json", domain: "connect.squareup.com", parseStatus: (d) => d.status?.indicator === "none" || d.status?.indicator === "minor" },
+            { name: "RPSFull", url: "https://rpsfull.pro", domain: "rpsfull.pro" },
+            { name: "RPSFull API", url: "https://api.rpsfull.pro/health", domain: "api.rpsfull.pro" },
+            { name: "BlessBox", url: "https://www.blessbox.org", domain: "www.blessbox.org" },
+            { name: "YOLOVibe Website", url: "https://yolovibe-website.vercel.app", domain: "yolovibe-website.vercel.app" },
+            { name: "RubriqFlow FileDrop", url: "https://filedrop-i4qwlzvup-rvegajrs-projects.vercel.app", domain: "filedrop.vercel.app" },
+        ]
+    },
+    {
+        section: "Upstream Vendor Status",
+        items: [
+            { name: "SendGrid", url: "https://status.sendgrid.com/api/v2/status.json", domain: "api.sendgrid.com", parseStatus: (d) => d.status?.indicator === "none" || d.status?.indicator === "minor" },
+            { name: "Twilio", url: "https://status.twilio.com/api/v2/status.json", domain: "api.twilio.com", parseStatus: (d) => d.status?.indicator === "none" || d.status?.indicator === "minor" },
+            { name: "Square", url: "https://issquareup.com/api/v2/status.json", domain: "connect.squareup.com", parseStatus: (d) => d.status?.indicator === "none" || d.status?.indicator === "minor" },
         ]
     }
 ];
