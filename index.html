@@ -91,6 +91,21 @@ const services = [
         ]
     },
     {
+        section: "LLM Infrastructure",
+        items: [
+            {
+                name: "LiteLLM Relay",
+                url: "https://ai.noctusoft.com/capacity",
+                domain: "ai.noctusoft.com",
+                // "Degraded" when the box is running hot, not just when it's down
+                parseStatus: (d) => d.litellm?.up === true && d.load?.pct_of_cores < 80 && d.mem?.used_pct < 90 && d.disk_used_pct < 80,
+                parseDetail: (d) => d.litellm?.up
+                    ? `CPU ${d.load.pct_of_cores}% · mem ${d.mem.used_pct}% · disk ${d.disk_used_pct}% · ${d.litellm.latency_ms}ms`
+                    : "LiteLLM process down",
+            },
+        ]
+    },
+    {
         section: "Upstream Vendor Status",
         items: [
             { name: "SendGrid", url: "https://status.sendgrid.com/api/v2/status.json", domain: "api.sendgrid.com", parseStatus: (d) => d.status?.indicator === "none" || d.status?.indicator === "minor" },
@@ -148,9 +163,10 @@ async function checkService(svc) {
         const ms = Math.round(performance.now() - start);
 
         let isUp = res.ok;
+        let data = null;
         if (svc.parseStatus && res.ok) {
             try {
-                const data = await res.json();
+                data = await res.json();
                 isUp = svc.parseStatus(data);
             } catch (e) {
                 isUp = res.ok;
@@ -160,7 +176,7 @@ async function checkService(svc) {
         dot.className = `dot ${isUp ? "up" : "down"}`;
         status.className = `service-status ${isUp ? "up" : "down"}`;
         status.textContent = isUp ? "Operational" : "Degraded";
-        latency.textContent = `${ms}ms`;
+        latency.textContent = (svc.parseDetail && data) ? svc.parseDetail(data) : `${ms}ms`;
         return isUp;
     } catch (e) {
         dot.className = "dot down";
